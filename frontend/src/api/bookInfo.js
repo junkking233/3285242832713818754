@@ -20,6 +20,11 @@ export function deleteBookInfo(data) {
   return request.delete('/api/book/deleteBookInfo', { data })
 }
 
+// 批量删除图书
+export function batchDeleteBookInfos(data) {
+  return request.delete('/api/book/batchDelete', { data })
+}
+
 // 借阅图书
 export function borrowBook(data) {
   return request.post('/api/book/borrowBook', data)

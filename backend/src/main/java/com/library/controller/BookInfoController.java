@@ -10,7 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/book")
@@ -72,13 +74,31 @@ public class BookInfoController {
     }
 
     /**
+     * 批量删除图书
+     */
+    @DeleteMapping("/batchDelete")
+    public Result<Void> batchDelete(@RequestBody Map<String, Object> params) {
+        @SuppressWarnings("unchecked")
+        List<Object> idList = (List<Object>) params.get("ids");
+        if (idList == null || idList.isEmpty()) {
+            return Result.error(400, "请选择要删除的记录");
+        }
+        List<Integer> ids = idList.stream()
+                .map(o -> Integer.valueOf(o.toString()))
+                .collect(Collectors.toList());
+        for (Integer id : ids) {
+            bookInfoService.deleteBookInfo(id);
+        }
+        return Result.success();
+    }
+
+    /**
      * 借阅图书
      * 对应文档 4.2.3 借阅图书
      */
     @PostMapping("/borrowBook")
     public Result<Void> borrowBook(@RequestBody Map<String, Object> params, HttpServletRequest request) {
         Integer userid = (Integer) request.getAttribute("userId");
-        // 前端可传 userid，否则用当前登录用户
         Object uidObj = params.get("userid");
         if (uidObj != null) {
             userid = Integer.valueOf(uidObj.toString());

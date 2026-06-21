@@ -6,12 +6,15 @@ import com.library.common.Result;
 import com.library.entity.User;
 import com.library.service.UserService;
 import com.library.util.JwtUtil;
+import com.library.util.Md5Util;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -52,6 +55,25 @@ public class UserController {
     }
 
     /**
+     * 注册
+     */
+    @PostMapping("/register")
+    public Result<Void> register(@RequestBody User user) {
+        if (user.getUsername() == null || user.getUsername().isEmpty()) {
+            return Result.error(400, "用户名不能为空");
+        }
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            return Result.error(400, "密码不能为空");
+        }
+        User existing = userService.findByUsername(user.getUsername());
+        if (existing != null) {
+            return Result.error(400, "用户名已存在");
+        }
+        userService.addUser(user);
+        return Result.success("注册成功", null);
+    }
+
+    /**
      * 获取当前登录用户信息
      */
     @GetMapping("/user/info")
@@ -59,6 +81,29 @@ public class UserController {
         Integer userId = (Integer) request.getAttribute("userId");
         User user = userService.getById(userId);
         return Result.success(user);
+    }
+
+    /**
+     * 修改密码
+     */
+    @PutMapping("/user/changePassword")
+    public Result<Void> changePassword(@RequestBody Map<String, String> params, HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("userId");
+        String oldPassword = params.get("oldPassword");
+        String newPassword = params.get("newPassword");
+
+        User user = userService.getById(userId);
+        if (user == null) {
+            return Result.error(400, "用户不存在");
+        }
+        if (!user.getPassword().equals(Md5Util.encrypt(oldPassword))) {
+            return Result.error(400, "原密码错误");
+        }
+        User update = new User();
+        update.setUserid(userId);
+        update.setPassword(newPassword);
+        userService.updateUser(update);
+        return Result.success("密码修改成功", null);
     }
 
     /**
@@ -81,7 +126,6 @@ public class UserController {
      */
     @PostMapping("/user/addUser")
     public Result<Void> addUser(@RequestBody User user) {
-        // 检查用户名是否已存在
         User existing = userService.findByUsername(user.getUsername());
         if (existing != null) {
             return Result.error(400, "用户名已存在");
@@ -118,6 +162,26 @@ public class UserController {
         }
         Integer userid = Integer.valueOf(idObj.toString());
         userService.deleteUser(userid);
+        return Result.success();
+    }
+
+    /**
+     * 批量删除用户
+     */
+    @DeleteMapping("/user/batchDelete")
+    public Result<Void> batchDeleteUsers(@RequestBody Map<String, Object> params) {
+        Object idsObj = params.get("ids");
+        if (idsObj == null) {
+            return Result.error(400, "请选择要删除的记录");
+        }
+        @SuppressWarnings("unchecked")
+        List<Object> idList = (List<Object>) idsObj;
+        List<Integer> ids = idList.stream()
+                .map(o -> Integer.valueOf(o.toString()))
+                .collect(Collectors.toList());
+        for (Integer id : ids) {
+            userService.deleteUser(id);
+        }
         return Result.success();
     }
 }

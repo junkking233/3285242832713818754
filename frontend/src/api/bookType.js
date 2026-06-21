@@ -24,3 +24,8 @@ export function updateBookType(data) {
 export function deleteBookType(data) {
   return request.delete('/api/bookType/deleteBookType', { data })
 }
+
+// 批量删除图书类型
+export function batchDeleteBookTypes(data) {
+  return request.delete('/api/bookType/batchDelete', { data })
+}

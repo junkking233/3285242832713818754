@@ -1,80 +1,79 @@
 <template>
   <div class="page-container">
-    <!-- 搜索栏 -->
-    <el-card shadow="never" class="search-card">
-      <el-form :model="queryParams" inline>
-        <el-form-item label="书名">
-          <el-input
-            v-model="queryParams.bookname"
-            placeholder="请输入书名"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="作者">
-          <el-input
-            v-model="queryParams.author"
-            placeholder="请输入作者"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="图书类型">
-          <el-select
-            v-model="queryParams.typeid"
-            placeholder="请选择类型"
-            clearable
-            style="width: 180px"
-          >
-            <el-option
-              v-for="item in bookTypeOptions"
-              :key="item.typeid"
-              :label="item.typename"
-              :value="item.typeid"
+    <!-- 操作工具栏 -->
+    <el-card shadow="never" class="toolbar-card">
+      <div class="toolbar">
+        <el-form :inline="true" :model="queryParams" class="toolbar-form">
+          <el-form-item label="书名">
+            <el-input
+              v-model="queryParams.bookname"
+              placeholder="请输入书名"
+              clearable
+              @keyup.enter="handleSearch"
             />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
-          <el-button :icon="Refresh" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+          </el-form-item>
+          <el-form-item label="作者">
+            <el-input
+              v-model="queryParams.author"
+              placeholder="请输入作者"
+              clearable
+              @keyup.enter="handleSearch"
+            />
+          </el-form-item>
+          <el-form-item label="类型">
+            <el-select
+              v-model="queryParams.typeid"
+              placeholder="请选择类型"
+              clearable
+              style="width: 180px"
+            >
+              <el-option
+                v-for="item in bookTypeOptions"
+                :key="item.typeid"
+                :label="item.typename"
+                :value="item.typeid"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
+            <el-button type="primary" :icon="Refresh" @click="handleShowAll">显示全部</el-button>
+          </el-form-item>
+        </el-form>
+        <div class="toolbar-actions">
+          <el-button type="primary" :icon="Plus" @click="handleAdd">添加图书</el-button>
+          <el-button type="danger" :icon="Delete" @click="handleBatchDelete">批量删除</el-button>
+        </div>
+      </div>
     </el-card>
 
     <!-- 表格 -->
     <el-card shadow="never" class="table-card">
-      <div class="table-toolbar">
-        <el-button type="primary" :icon="Plus" @click="handleAdd">添加图书</el-button>
-      </div>
-
-      <el-table v-loading="loading" :data="tableData" stripe border style="width: 100%">
+      <el-table
+        ref="tableRef"
+        v-loading="loading"
+        :data="tableData"
+        stripe
+        border
+        style="width: 100%"
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="50" align="center" />
         <el-table-column type="index" label="序号" width="60" align="center" />
-        <el-table-column prop="bookid" label="图书ID" width="80" align="center" />
-        <el-table-column prop="bookname" label="书名" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="author" label="作者" width="120" show-overflow-tooltip />
-        <el-table-column label="价格" width="100" align="right">
+        <el-table-column prop="bookname" label="图书名称" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="author" label="图书作者" width="120" show-overflow-tooltip />
+        <el-table-column label="图书价格" width="110" align="right">
           <template #default="scope">
             ¥{{ Number(scope.row.price).toFixed(2) }}
           </template>
         </el-table-column>
-        <el-table-column prop="typename" label="类型" width="120" align="center" />
-        <el-table-column label="状态" width="100" align="center">
+        <el-table-column prop="typename" label="图书类型名" width="130" align="center" />
+        <el-table-column prop="description" label="图书描述" min-width="200" show-overflow-tooltip />
+        <el-table-column label="操作" width="240" align="center" fixed="right">
           <template #default="scope">
-            <el-tag v-if="scope.row.isborrowed === 1" type="warning">已借出</el-tag>
-            <el-tag v-else type="success">未借出</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="220" align="center" fixed="right">
-          <template #default="scope">
-            <el-button type="primary" link :icon="Edit" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button
-              v-if="scope.row.isborrowed === 0"
-              type="success"
-              link
-              :icon="Promotion"
-              @click="handleBorrow(scope.row)"
-            >借阅</el-button>
-            <el-button type="danger" link :icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
+            <el-button type="primary" link size="small" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button type="success" link size="small" @click="handleBorrow(scope.row)">借阅图书</el-button>
+            <el-button type="danger" link size="small" @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -94,7 +93,13 @@
     </el-card>
 
     <!-- 添加/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px" @closed="resetForm">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogTitle"
+      width="500px"
+      :close-on-click-modal="false"
+      @closed="handleDialogClosed"
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="书名" prop="bookname">
           <el-input v-model="form.bookname" placeholder="请输入书名" />
@@ -135,10 +140,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Refresh, Plus, Edit, Delete, Promotion } from '@element-plus/icons-vue'
-import { queryBookInfosByPage, addBookInfo, updateBookInfo, deleteBookInfo, borrowBook } from '@/api/bookInfo'
+import { Search, Refresh, Plus, Delete } from '@element-plus/icons-vue'
+import { queryBookInfosByPage, addBookInfo, updateBookInfo, deleteBookInfo, batchDeleteBookInfos, borrowBook } from '@/api/bookInfo'
 import { listAllBookTypes } from '@/api/bookType'
 import { useUserStore } from '@/stores/user'
 
@@ -149,6 +154,9 @@ const submitting = ref(false)
 const tableData = ref([])
 const total = ref(0)
 const bookTypeOptions = ref([])
+const selectedRows = ref([])
+const tableRef = ref(null)
+const formRef = ref(null)
 
 const queryParams = reactive({
   page: 1,
@@ -159,8 +167,9 @@ const queryParams = reactive({
 })
 
 const dialogVisible = ref(false)
-const dialogTitle = ref('添加图书')
-const formRef = ref(null)
+const isEdit = ref(false)
+const dialogTitle = computed(() => (isEdit.value ? '编辑图书' : '添加图书'))
+
 const form = reactive({
   bookid: null,
   bookname: '',
@@ -172,9 +181,7 @@ const form = reactive({
 
 const rules = {
   bookname: [{ required: true, message: '请输入书名', trigger: 'blur' }],
-  author: [{ required: true, message: '请输入作者', trigger: 'blur' }],
-  price: [{ required: true, message: '请输入价格', trigger: 'blur' }],
-  typeid: [{ required: true, message: '请选择类型', trigger: 'change' }]
+  author: [{ required: true, message: '请输入作者', trigger: 'blur' }]
 }
 
 // 加载图书类型下拉选项
@@ -208,7 +215,8 @@ function handleSearch() {
   loadData()
 }
 
-function handleReset() {
+// 显示全部：清空搜索条件并重新加载
+function handleShowAll() {
   queryParams.bookname = ''
   queryParams.author = ''
   queryParams.typeid = ''
@@ -227,8 +235,11 @@ function handleCurrentChange(page) {
   loadData()
 }
 
-function handleAdd() {
-  dialogTitle.value = '添加图书'
+function handleSelectionChange(rows) {
+  selectedRows.value = rows
+}
+
+function resetForm() {
   Object.assign(form, {
     bookid: null,
     bookname: '',
@@ -237,11 +248,16 @@ function handleAdd() {
     typeid: '',
     description: ''
   })
+}
+
+function handleAdd() {
+  isEdit.value = false
+  resetForm()
   dialogVisible.value = true
 }
 
 function handleEdit(row) {
-  dialogTitle.value = '编辑图书'
+  isEdit.value = true
   Object.assign(form, {
     bookid: row.bookid,
     bookname: row.bookname,
@@ -253,8 +269,10 @@ function handleEdit(row) {
   dialogVisible.value = true
 }
 
-function resetForm() {
-  formRef.value?.clearValidate()
+// 弹窗关闭后 resetFields 清空表单
+function handleDialogClosed() {
+  formRef.value?.resetFields()
+  resetForm()
 }
 
 async function handleSubmit() {
@@ -263,7 +281,7 @@ async function handleSubmit() {
     if (!valid) return
     submitting.value = true
     try {
-      if (form.bookid) {
+      if (isEdit.value) {
         await updateBookInfo({ ...form })
         ElMessage.success('修改成功')
       } else {
@@ -281,9 +299,10 @@ async function handleSubmit() {
   })
 }
 
+// 单个删除
 async function handleDelete(row) {
   try {
-    await ElMessageBox.confirm(`确定要删除图书「${row.bookname}」吗？`, '提示', {
+    await ElMessageBox.confirm(`确定要删除图书「${row.bookname}」吗？`, '删除确认', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
@@ -296,20 +315,37 @@ async function handleDelete(row) {
   }
 }
 
+// 批量删除
+async function handleBatchDelete() {
+  if (selectedRows.value.length === 0) {
+    ElMessage.warning('请至少选择一条记录')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(`确定要删除选中的 ${selectedRows.value.length} 条图书吗？`, '批量删除确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    const ids = selectedRows.value.map((row) => row.bookid)
+    await batchDeleteBookInfos({ ids })
+    ElMessage.success('批量删除成功')
+    tableRef.value?.clearSelection()
+    loadData()
+  } catch (e) {
+    // 用户取消或请求失败
+  }
+}
+
 // 借阅图书：携带当前用户ID
 async function handleBorrow(row) {
   try {
-    await ElMessageBox.confirm(`确定要借阅图书「${row.bookname}」吗？`, '借阅确认', {
-      confirmButtonText: '确定借阅',
-      cancelButtonText: '取消',
-      type: 'info'
-    })
     const userid = userStore.user?.userid
     await borrowBook({ bookid: row.bookid, userid })
     ElMessage.success('借阅成功')
     loadData()
   } catch (e) {
-    // 用户取消或请求失败
+    // 错误已由拦截器统一提示
   }
 }
 
@@ -324,16 +360,25 @@ onMounted(() => {
   padding: 20px;
 }
 
-.search-card {
-  margin-bottom: 20px;
+.toolbar-card {
+  margin-bottom: 16px;
 }
 
-.search-card :deep(.el-form-item) {
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.toolbar-form :deep(.el-form-item) {
   margin-bottom: 0;
 }
 
-.table-toolbar {
-  margin-bottom: 16px;
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .pagination {

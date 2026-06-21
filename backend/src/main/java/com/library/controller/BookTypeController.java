@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/bookType")
@@ -71,6 +72,25 @@ public class BookTypeController {
     public Result<Void> deleteBookType(@RequestBody Map<String, Object> params) {
         Integer typeid = Integer.valueOf(params.get("typeid").toString());
         bookTypeService.deleteBookType(typeid);
+        return Result.success();
+    }
+
+    /**
+     * 批量删除图书类型
+     */
+    @DeleteMapping("/batchDelete")
+    public Result<Void> batchDelete(@RequestBody Map<String, Object> params) {
+        @SuppressWarnings("unchecked")
+        List<Object> idList = (List<Object>) params.get("ids");
+        if (idList == null || idList.isEmpty()) {
+            return Result.error(400, "请选择要删除的记录");
+        }
+        List<Integer> ids = idList.stream()
+                .map(o -> Integer.valueOf(o.toString()))
+                .collect(Collectors.toList());
+        for (Integer id : ids) {
+            bookTypeService.deleteBookType(id);
+        }
         return Result.success();
     }
 }

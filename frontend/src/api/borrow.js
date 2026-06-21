@@ -14,3 +14,8 @@ export function returnBook(data) {
 export function deleteBorrow(data) {
   return request.delete('/api/borrow/deleteBorrow', { data })
 }
+
+// 批量删除借阅记录
+export function batchDeleteBorrows(data) {
+  return request.delete('/api/borrow/batchDelete', { data })
+}

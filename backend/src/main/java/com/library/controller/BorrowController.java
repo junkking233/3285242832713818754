@@ -8,8 +8,9 @@ import com.library.service.BorrowService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/borrow")
@@ -36,19 +37,6 @@ public class BorrowController {
     }
 
     /**
-     * 归还图书
-     */
-    @PostMapping("/returnBook")
-    public Result<Void> returnBook(@RequestBody Map<String, Object> params) {
-        Integer borrowid = Integer.valueOf(params.get("borrowid").toString());
-        int ret = borrowService.returnBook(borrowid);
-        if (ret == 0) {
-            return Result.error(400, "借阅记录不存在或已归还");
-        }
-        return Result.success("归还成功", null);
-    }
-
-    /**
      * 删除借阅记录
      * 对应文档 4.4.2 删除图书
      */
@@ -56,6 +44,25 @@ public class BorrowController {
     public Result<Void> deleteBorrow(@RequestBody Map<String, Object> params) {
         Integer borrowid = Integer.valueOf(params.get("borrowid").toString());
         borrowService.deleteBorrow(borrowid);
+        return Result.success();
+    }
+
+    /**
+     * 批量删除借阅记录
+     */
+    @DeleteMapping("/batchDelete")
+    public Result<Void> batchDelete(@RequestBody Map<String, Object> params) {
+        @SuppressWarnings("unchecked")
+        List<Object> idList = (List<Object>) params.get("ids");
+        if (idList == null || idList.isEmpty()) {
+            return Result.error(400, "请选择要删除的记录");
+        }
+        List<Integer> ids = idList.stream()
+                .map(o -> Integer.valueOf(o.toString()))
+                .collect(Collectors.toList());
+        for (Integer id : ids) {
+            borrowService.deleteBorrow(id);
+        }
         return Result.success();
     }
 }
