@@ -29,7 +29,7 @@
             <el-icon><Document /></el-icon>
             <span>图书信息管理</span>
           </el-menu-item>
-          <el-menu-item index="/admin/book-type">
+          <el-menu-item v-if="userStore.isAdmin" index="/admin/book-type">
             <el-icon><Files /></el-icon>
             <span>图书类型管理</span>
           </el-menu-item>
@@ -38,7 +38,7 @@
             <span>借阅信息管理</span>
           </el-menu-item>
         </el-sub-menu>
-        <el-sub-menu index="other-mgr">
+        <el-sub-menu v-if="userStore.isAdmin" index="other-mgr">
           <template #title>
             <el-icon><Setting /></el-icon>
             <span>其他管理</span>
@@ -47,6 +47,12 @@
             <el-icon><UserFilled /></el-icon>
             <span>用户管理</span>
           </el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="account-mgr">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>账号管理</span>
+          </template>
           <el-menu-item index="/admin/change-password">
             <el-icon><Key /></el-icon>
             <span>修改密码</span>

@@ -4,6 +4,7 @@
     <div class="toolbar">
       <div class="toolbar-left">
         <el-input
+          v-if="userStore.isAdmin"
           v-model="queryParams.username"
           placeholder="用户名"
           clearable
@@ -20,7 +21,7 @@
         <el-button type="primary" :icon="Search" @click="handleSearch">搜索</el-button>
         <el-button type="primary" :icon="Refresh" @click="handleShowAll">显示全部</el-button>
       </div>
-      <div class="toolbar-right">
+      <div class="toolbar-right" v-if="userStore.isAdmin">
         <el-button type="danger" :icon="Delete" @click="handleBatchDelete">批量删除</el-button>
       </div>
     </div>
@@ -34,7 +35,7 @@
       style="width: 100%"
       @selection-change="handleSelectionChange"
     >
-      <el-table-column type="selection" width="50" align="center" />
+      <el-table-column v-if="userStore.isAdmin" type="selection" width="50" align="center" />
       <el-table-column type="index" label="序号" width="60" align="center" />
       <el-table-column prop="username" label="用户名" min-width="120" show-overflow-tooltip />
       <el-table-column prop="bookname" label="图书名" min-width="150" show-overflow-tooltip />
@@ -44,7 +45,7 @@
           <span>{{ row.returntime || '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="100" align="center" fixed="right">
+      <el-table-column v-if="userStore.isAdmin" label="操作" width="100" align="center" fixed="right">
         <template #default="{ row }">
           <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
@@ -71,6 +72,9 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Delete } from '@element-plus/icons-vue'
 import { queryBorrowsByPage, deleteBorrow, batchDeleteBorrows } from '@/api/borrow'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
 
 const loading = ref(false)
 const tableData = ref([])
@@ -87,7 +91,12 @@ const queryParams = reactive({
 async function loadData() {
   loading.value = true
   try {
-    const res = await queryBorrowsByPage(queryParams)
+    // 读者只能查看自己的借阅记录
+    const params = { ...queryParams }
+    if (!userStore.isAdmin) {
+      params.userid = userStore.user?.userid
+    }
+    const res = await queryBorrowsByPage(params)
     tableData.value = res.data.list || []
     total.value = res.data.total || 0
   } catch (e) {

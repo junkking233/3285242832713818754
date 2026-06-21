@@ -40,7 +40,7 @@
             <el-button type="primary" :icon="Refresh" @click="handleShowAll">显示全部</el-button>
           </el-form-item>
         </el-form>
-        <div class="toolbar-actions">
+        <div class="toolbar-actions" v-if="userStore.isAdmin">
           <el-button type="primary" :icon="Plus" @click="handleAdd">添加图书</el-button>
           <el-button type="danger" :icon="Delete" @click="handleBatchDelete">批量删除</el-button>
         </div>
@@ -58,7 +58,7 @@
         style="width: 100%"
         @selection-change="handleSelectionChange"
       >
-        <el-table-column type="selection" width="50" align="center" />
+        <el-table-column type="selection" width="50" align="center" v-if="userStore.isAdmin" />
         <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="bookname" label="图书名称" min-width="160" show-overflow-tooltip />
         <el-table-column prop="author" label="图书作者" width="120" show-overflow-tooltip />
@@ -71,9 +71,9 @@
         <el-table-column prop="description" label="图书描述" min-width="200" show-overflow-tooltip />
         <el-table-column label="操作" width="240" align="center" fixed="right">
           <template #default="scope">
-            <el-button type="primary" link size="small" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button v-if="userStore.isAdmin" type="primary" link size="small" @click="handleEdit(scope.row)">编辑</el-button>
             <el-button type="success" link size="small" @click="handleBorrow(scope.row)">借阅图书</el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(scope.row)">删除</el-button>
+            <el-button v-if="userStore.isAdmin" type="danger" link size="small" @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

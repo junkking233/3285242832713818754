@@ -29,7 +29,7 @@ const routes = [
         path: 'book-type',
         name: 'BookTypeManage',
         component: () => import('@/views/BookTypeManage.vue'),
-        meta: { title: '图书类型管理', breadcrumb: ['首页', '图书管理', '图书类型管理'] }
+        meta: { title: '图书类型管理', breadcrumb: ['首页', '图书管理', '图书类型管理'], requireAdmin: true }
       },
       {
         path: 'borrow',
@@ -41,13 +41,13 @@ const routes = [
         path: 'user',
         name: 'UserManage',
         component: () => import('@/views/UserManage.vue'),
-        meta: { title: '用户管理', breadcrumb: ['首页', '其他管理', '用户管理'] }
+        meta: { title: '用户管理', breadcrumb: ['首页', '其他管理', '用户管理'], requireAdmin: true }
       },
       {
         path: 'change-password',
         name: 'ChangePassword',
         component: () => import('@/views/ChangePassword.vue'),
-        meta: { title: '修改密码', breadcrumb: ['首页', '其他管理', '修改密码'] }
+        meta: { title: '修改密码', breadcrumb: ['首页', '账号管理', '修改密码'] }
       }
     ]
   },
@@ -65,13 +65,32 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   document.title = (to.meta.title || '图书管理系统') + ' - 图书管理系统'
   const token = localStorage.getItem('token')
+  const userStr = localStorage.getItem('user')
+
   if (to.path !== '/login' && !token) {
     next('/login')
-  } else if (to.path === '/login' && token) {
-    next('/admin/welcome')
-  } else {
-    next()
+    return
   }
+  if (to.path === '/login' && token) {
+    next('/admin/welcome')
+    return
+  }
+
+  // 管理员权限路由守卫
+  if (to.meta.requireAdmin) {
+    try {
+      const user = JSON.parse(userStr || '{}')
+      if (user.role !== 'ADMIN') {
+        next('/admin/welcome')
+        return
+      }
+    } catch (e) {
+      next('/login')
+      return
+    }
+  }
+
+  next()
 })
 
 export default router
