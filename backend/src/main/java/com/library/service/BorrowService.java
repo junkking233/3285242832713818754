@@ -19,5 +19,7 @@ public interface BorrowService {
      */
     int returnBook(Integer borrowid);
 
+    Borrow getBorrowById(Integer borrowid);
+
     int deleteBorrow(Integer borrowid);
 }

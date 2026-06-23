@@ -45,9 +45,26 @@
           <span>{{ row.returntime || '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column v-if="userStore.isAdmin" label="操作" width="100" align="center" fixed="right">
+      <el-table-column label="状态" width="100" align="center">
         <template #default="{ row }">
-          <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+          <el-tag :type="row.returntime ? 'info' : 'warning'">
+            {{ row.returntime ? '已归还' : '借阅中' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="160" align="center" fixed="right">
+        <template #default="{ row }">
+          <el-button
+            v-if="!row.returntime"
+            type="success"
+            link
+            size="small"
+            :icon="Check"
+            @click="handleReturn(row)"
+          >
+            归还
+          </el-button>
+          <el-button v-if="userStore.isAdmin" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -70,8 +87,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Refresh, Delete } from '@element-plus/icons-vue'
-import { queryBorrowsByPage, deleteBorrow, batchDeleteBorrows } from '@/api/borrow'
+import { Search, Refresh, Delete, Check } from '@element-plus/icons-vue'
+import { queryBorrowsByPage, returnBook, deleteBorrow, batchDeleteBorrows } from '@/api/borrow'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
@@ -131,6 +148,22 @@ function handleCurrentChange(page) {
 
 function handleSelectionChange(rows) {
   selectedRows.value = rows
+}
+
+function handleReturn(row) {
+  ElMessageBox.confirm(`确定要归还图书「${row.bookname}」吗？`, '归还确认', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await returnBook({ borrowid: row.borrowid })
+      ElMessage.success('归还成功')
+      loadData()
+    } catch (e) {
+      // 错误已在拦截器处理
+    }
+  }).catch(() => {})
 }
 
 function handleDelete(row) {

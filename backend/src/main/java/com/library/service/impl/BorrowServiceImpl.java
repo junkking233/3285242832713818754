@@ -1,5 +1,6 @@
 package com.library.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -28,9 +29,19 @@ public class BorrowServiceImpl extends ServiceImpl<BorrowMapper, Borrow> impleme
     @Override
     @Transactional
     public int borrowBook(Integer userid, Integer bookid) {
-        // 检查图书是否存在、是否已借出
         BookInfo theBook = bookInfoMapper.selectById(bookid);
-        if (theBook == null || theBook.getIsborrowed() == 1) {
+        if (theBook == null) {
+            return 0;
+        }
+
+        Long activeBorrowCount = countActiveBorrowByBookId(bookid);
+        if (activeBorrowCount > 0) {
+            if (theBook.getIsborrowed() == null || theBook.getIsborrowed() == 0) {
+                BookInfo bookInfo = new BookInfo();
+                bookInfo.setBookid(bookid);
+                bookInfo.setIsborrowed(1);
+                bookInfoMapper.updateById(bookInfo);
+            }
             return 0;
         }
 
@@ -71,7 +82,32 @@ public class BorrowServiceImpl extends ServiceImpl<BorrowMapper, Borrow> impleme
     }
 
     @Override
+    public Borrow getBorrowById(Integer borrowid) {
+        return baseMapper.selectById(borrowid);
+    }
+
+    @Override
+    @Transactional
     public int deleteBorrow(Integer borrowid) {
-        return baseMapper.deleteById(borrowid);
+        Borrow borrow = baseMapper.selectById(borrowid);
+        if (borrow == null) {
+            return 0;
+        }
+
+        int deleted = baseMapper.deleteById(borrowid);
+        if (deleted > 0 && borrow.getReturntime() == null
+                && countActiveBorrowByBookId(borrow.getBookid()) == 0) {
+            BookInfo bookInfo = new BookInfo();
+            bookInfo.setBookid(borrow.getBookid());
+            bookInfo.setIsborrowed(0);
+            bookInfoMapper.updateById(bookInfo);
+        }
+        return deleted;
+    }
+
+    private Long countActiveBorrowByBookId(Integer bookid) {
+        return baseMapper.selectCount(new LambdaQueryWrapper<Borrow>()
+                .eq(Borrow::getBookid, bookid)
+                .isNull(Borrow::getReturntime));
     }
 }
